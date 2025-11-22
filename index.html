@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather App</title>
+<style>
+  body { font-family: Arial; text-align: center; margin: 20px; background: #f0f4f8; }
+  input, button { padding: 10px 15px; margin: 5px; font-size: 16px; }
+  button { cursor: pointer; background-color: #1e90ff; color: white; border: none; border-radius: 5px; }
+  button:hover { background-color: #0f75d8; }
+  .section { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 15px; margin: 10px auto; width: 90%; max-width: 600px; }
+  .forecast { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin-top: 15px; }
+  .day { background: #1e90ff; color: white; border-radius: 10px; padding: 10px; width: 120px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+  .day img { width: 60px; height: 60px; }
+  .aqi-good { color: green; }
+  .aqi-fair { color: #9acd32; }
+  .aqi-moderate { color: orange; }
+  .aqi-poor { color: red; }
+  .aqi-very-poor { color: darkred; }
+  #info-btn { margin-top: 15px; background-color: #ffa500; }
+  #info-btn:hover { background-color: #ff8c00; }
+</style>
+</head>
+<body>
+
+<h1>Weather App</h1>
+<p>Created by: Olalere Johnson Adekunle</p>
+<input type="text" id="city" placeholder="Enter city">
+<button onclick="searchCity()">Get Weather</button>
+<button id="info-btn" onclick="showInfo()">Info</button>
+
+<div id="current" class="section"></div>
+<div id="forecast" class="forecast"></div>
+<div id="air" class="section"></div>
+
+<script>
+function aqiClass(aqi) {
+    switch(aqi) {
+        case "Good": return "aqi-good";
+        case "Fair": return "aqi-fair";
+        case "Moderate": return "aqi-moderate";
+        case "Poor": return "aqi-poor";
+        case "Very Poor": return "aqi-very-poor";
+        default: return "";
+    }
+}
+
+async function getWeather(city) {
+    if (!city) return alert("Please enter a city name");
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/weather', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ city })
+        });
+
+        if (!response.ok) throw new Error("City not found or API error");
+
+        const data = await response.json();
+
+        // Current weather
+        const c = data.current;
+        document.getElementById('current').innerHTML = `
+            <h2>${c.city}, ${c.country} (${c.date})</h2>
+            <img src="http://openweathermap.org/img/wn/${c.icon}@2x.png" alt="icon">
+            <p style="text-transform: capitalize;">${c.description}</p>
+            <p>Temperature: ${c.temp.toFixed(1)}°C (Feels like: ${c.feels_like.toFixed(1)}°C)</p>
+            <p>Humidity: ${c.humidity}% | Pressure: ${c.pressure} hPa</p>
+            <p>Visibility: ${c.visibility} km | Wind: ${c.wind_speed} m/s</p>
+            <p>Sunrise: ${c.sunrise} | Sunset: ${c.sunset}</p>
+        `;
+
+        // 5-day forecast
+        const container = document.getElementById('forecast');
+        container.innerHTML = "";
+        data.forecast.forEach(d => {
+            const div = document.createElement('div');
+            div.className = "day";
+            div.innerHTML = `
+                <h3>${d.day}</h3>
+                <p>${d.date}</p>
+                <img src="http://openweathermap.org/img/wn/${d.icon}@2x.png" alt="icon">
+                <p style="text-transform: capitalize;">${d.description}</p>
+                <p>${d.min_temp.toFixed(1)}°C / ${d.max_temp.toFixed(1)}°C</p>
+            `;
+            container.appendChild(div);
+        });
+
+        // Air Quality
+        const a = data.air_quality;
+        const cls = aqiClass(a.aqi);
+        document.getElementById('air').innerHTML = `
+            <h3 class="${cls}">Air Quality: ${a.aqi}</h3>
+            <p>PM2.5: ${a.pm2_5} | PM10: ${a.pm10}</p>
+            <p>CO: ${a.co} | NO: ${a.no} | NO2: ${a.no2}</p>
+            <p>O3: ${a.o3} | SO2: ${a.so2} | NH3: ${a.nh3}</p>
+        `;
+    } catch (error) {
+        alert(error.message);
+        document.getElementById('current').innerHTML = "";
+        document.getElementById('forecast').innerHTML = "";
+        document.getElementById('air').innerHTML = "";
+    }
+}
+
+// Search button
+function searchCity() {
+    const city = document.getElementById('city').value.trim();
+    getWeather(city);
+}
+
+// Info button
+function showInfo() {
+    alert("Product Manager Accelerator (PMA) is a program designed to help aspiring product managers gain hands-on experience and skills. Learn more at: https://www.linkedin.com/company/product-manager-accelerator/");
+}
+</script>
+
+</body>
+</html>
